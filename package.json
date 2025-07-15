@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "axios": "^1.10.0",
+    "cropperjs": "^1.5.13",
+    "multer": "^2.0.1",
+    "vue-router": "^4.5.1"
+  }
+}

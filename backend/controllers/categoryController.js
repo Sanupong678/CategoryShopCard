@@ -1,0 +1,159 @@
+const Category = require('../models/Category');
+const fs = require('fs');
+const path = require('path');
+
+// Get all categories
+const getAllCategories = async (req, res) => {
+  try {
+    console.log(`[${new Date().toISOString()}] GET /api/categories - Fetching all categories`);
+    
+    const categories = await Category.find().sort({ createdAt: -1 });
+    
+    console.log(`[${new Date().toISOString()}] Successfully fetched ${categories.length} categories`);
+    res.json(categories);
+  } catch (error) {
+    console.error(`[${new Date().toISOString()}] Error fetching categories:`, error);
+    res.status(500).json({ message: 'เกิดข้อผิดพลาดในการดึงข้อมูลรายการ' });
+  }
+};
+
+// Create new category
+const createCategory = async (req, res) => {
+  try {
+    console.log(`[${new Date().toISOString()}] POST /api/categories - Creating new category`);
+    console.log('Request body:', req.body);
+    console.log('Request file:', req.file);
+
+    const { name } = req.body;
+    
+    if (!name || !name.trim()) {
+      console.log(`[${new Date().toISOString()}] Validation error: Name is required`);
+      return res.status(400).json({ message: 'กรุณาใส่ชื่อรายการ' });
+    }
+
+    if (!req.file) {
+      console.log(`[${new Date().toISOString()}] Validation error: Image is required`);
+      return res.status(400).json({ message: 'กรุณาเลือกรูปภาพ' });
+    }
+
+    // Create image URL
+    const imageUrl = `/uploads/${req.file.filename}`;
+
+    const category = new Category({
+      name: name.trim(),
+      imageUrl
+    });
+
+    await category.save();
+    
+    console.log(`[${new Date().toISOString()}] Successfully created category:`, category);
+    res.status(201).json(category);
+  } catch (error) {
+    console.error(`[${new Date().toISOString()}] Error creating category:`, error);
+    res.status(500).json({ message: 'เกิดข้อผิดพลาดในการเพิ่มรายการ' });
+  }
+};
+
+// Delete category
+const deleteCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log(`[${new Date().toISOString()}] DELETE /api/categories/${id} - Deleting category`);
+
+    const category = await Category.findById(id);
+    
+    if (!category) {
+      console.log(`[${new Date().toISOString()}] Category not found with id: ${id}`);
+      return res.status(404).json({ message: 'ไม่พบรายการที่ต้องการลบ' });
+    }
+
+    // Delete image file if exists
+    if (category.imageUrl) {
+      const imagePath = path.join(__dirname, '..', category.imageUrl);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+        console.log(`[${new Date().toISOString()}] Deleted image file: ${imagePath}`);
+      }
+    }
+
+    await Category.findByIdAndDelete(id);
+    
+    console.log(`[${new Date().toISOString()}] Successfully deleted category with id: ${id}`);
+    res.json({ message: 'ลบรายการสำเร็จ' });
+  } catch (error) {
+    console.error(`[${new Date().toISOString()}] Error deleting category:`, error);
+    res.status(500).json({ message: 'เกิดข้อผิดพลาดในการลบรายการ' });
+  }
+};
+
+// Update category
+const updateCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name } = req.body;
+    
+    console.log(`[${new Date().toISOString()}] PUT /api/categories/${id} - Updating category`);
+    console.log('Request body:', req.body);
+    console.log('Request file:', req.file);
+
+    const category = await Category.findById(id);
+    
+    if (!category) {
+      console.log(`[${new Date().toISOString()}] Category not found with id: ${id}`);
+      return res.status(404).json({ message: 'ไม่พบรายการที่ต้องการแก้ไข' });
+    }
+
+    const updateData = {};
+    
+    if (name && name.trim()) {
+      updateData.name = name.trim();
+    }
+
+    if (req.file) {
+      // Delete old image if exists
+      if (category.imageUrl) {
+        const oldImagePath = path.join(__dirname, '..', category.imageUrl);
+        if (fs.existsSync(oldImagePath)) {
+          fs.unlinkSync(oldImagePath);
+          console.log(`[${new Date().toISOString()}] Deleted old image file: ${oldImagePath}`);
+        }
+      }
+      
+      updateData.imageUrl = `/uploads/${req.file.filename}`;
+    }
+
+    const updatedCategory = await Category.findByIdAndUpdate(
+      id, 
+      updateData, 
+      { new: true }
+    );
+    
+    console.log(`[${new Date().toISOString()}] Successfully updated category:`, updatedCategory);
+    res.json(updatedCategory);
+  } catch (error) {
+    console.error(`[${new Date().toISOString()}] Error updating category:`, error);
+    res.status(500).json({ message: 'เกิดข้อผิดพลาดในการแก้ไขรายการ' });
+  }
+};
+
+// Get category by id
+const getCategoryById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const category = await Category.findById(id);
+    if (!category) {
+      return res.status(404).json({ message: 'ไม่พบหมวดหมู่' });
+    }
+    res.json(category);
+  } catch (error) {
+    res.status(500).json({ message: 'เกิดข้อผิดพลาดในการดึงข้อมูลหมวดหมู่' });
+  }
+};
+
+module.exports = {
+  getAllCategories,
+  createCategory,
+  deleteCategory,
+  updateCategory,
+  getCategoryById
+};
