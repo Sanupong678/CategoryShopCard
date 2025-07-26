@@ -3,6 +3,13 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
+// Helper function to check if image file exists
+const checkImageExists = (imageUrl) => {
+  if (!imageUrl) return false;
+  const imagePath = path.join(__dirname, '..', imageUrl);
+  return fs.existsSync(imagePath);
+};
+
 // Configure multer for image uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -45,7 +52,23 @@ const getAllProducts = async (req, res) => {
       filter.nameproduct = { $regex: search, $options: 'i' }; // filter by nameproduct (case-insensitive)
     }
     const products = await Product.find(filter).populate('category', 'name');
-    res.json(products);
+    
+    // Check and fix missing images
+    const productsWithValidImages = products.map(product => {
+      const productObj = product.toObject();
+      if (productObj.images && Array.isArray(productObj.images)) {
+        productObj.images = productObj.images.filter(imageUrl => {
+          const exists = checkImageExists(imageUrl);
+          if (!exists) {
+            console.log(`[${new Date().toISOString()}] Missing product image: ${imageUrl}`);
+          }
+          return exists;
+        });
+      }
+      return productObj;
+    });
+    
+    res.json(productsWithValidImages);
   } catch (error) {
     res.status(500).json({ message: 'เกิดข้อผิดพลาดในการดึงข้อมูลสินค้าทั้งหมด' });
   }

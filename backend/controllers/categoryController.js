@@ -2,6 +2,14 @@ const Category = require('../models/Category');
 const Product = require('../models/Product');
 const fs = require('fs');
 const path = require('path');
+const { convertImageToBase64, isBase64Image } = require('../utils/imageUtils');
+
+// Helper function to check if image file exists
+const checkImageExists = (imageUrl) => {
+  if (!imageUrl) return false;
+  const imagePath = path.join(__dirname, '..', imageUrl);
+  return fs.existsSync(imagePath);
+};
 
 // Get all categories
 const getAllCategories = async (req, res) => {
@@ -10,8 +18,25 @@ const getAllCategories = async (req, res) => {
     
     const categories = await Category.find().sort({ createdAt: -1 });
     
+    // Check and fix missing images
+    const categoriesWithValidImages = categories.map(category => {
+      const categoryObj = category.toObject();
+      
+      // ถ้าเป็น base64 ให้ใช้เลย
+      if (categoryObj.imageType === 'base64' && categoryObj.imageBase64) {
+        return categoryObj;
+      }
+      
+      // ถ้าเป็น URL ให้ตรวจสอบไฟล์
+      if (!checkImageExists(categoryObj.imageUrl)) {
+        console.log(`[${new Date().toISOString()}] Missing image for category: ${categoryObj.name}, URL: ${categoryObj.imageUrl}`);
+        categoryObj.imageUrl = null;
+      }
+      return categoryObj;
+    });
+    
     console.log(`[${new Date().toISOString()}] Successfully fetched ${categories.length} categories`);
-    res.json(categories);
+    res.json(categoriesWithValidImages);
   } catch (error) {
     console.error(`[${new Date().toISOString()}] Error fetching categories:`, error);
     res.status(500).json({ message: 'เกิดข้อผิดพลาดในการดึงข้อมูลรายการ' });
@@ -37,15 +62,26 @@ const createCategory = async (req, res) => {
       return res.status(400).json({ message: 'กรุณาเลือกรูปภาพ' });
     }
 
-    // Create image URL
-    const imageUrl = `/uploads/${req.file.filename}`;
+    // แปลงรูปภาพเป็น Base64
+    const imagePath = path.join(__dirname, '..', 'uploads', req.file.filename);
+    const imageBase64 = convertImageToBase64(imagePath);
+    
+    if (!imageBase64) {
+      return res.status(500).json({ message: 'เกิดข้อผิดพลาดในการประมวลผลรูปภาพ' });
+    }
 
     const category = new Category({
       name: name.trim(),
-      imageUrl
+      imageBase64: imageBase64,
+      imageType: 'base64'
     });
 
     await category.save();
+    
+    // ลบไฟล์ชั่วคราว
+    if (fs.existsSync(imagePath)) {
+      fs.unlinkSync(imagePath);
+    }
     
     console.log(`[${new Date().toISOString()}] Successfully created category:`, category);
     res.status(201).json(category);

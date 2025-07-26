@@ -1,4 +1,6 @@
 const Banner = require('../models/Banner');
+const path = require('path');
+const fs = require('fs');
 
 function logError(context, err, req) {
   console.error(`[${new Date().toISOString()}] [Banner] ${context} Error:`);
@@ -9,6 +11,13 @@ function logError(context, err, req) {
   console.error('  error:', err);
   if (err && err.stack) console.error('  stack:', err.stack);
 }
+
+// Helper function to check if image file exists
+const checkImageExists = (imageUrl) => {
+  if (!imageUrl) return false;
+  const imagePath = path.join(__dirname, '..', imageUrl);
+  return fs.existsSync(imagePath);
+};
 
 // อัปโหลด banner ใหม่
 exports.createBanner = async (req, res) => {
@@ -34,8 +43,19 @@ exports.createBanner = async (req, res) => {
 exports.getBanner = async (req, res) => {
   try {
     const banner = await Banner.findOne().sort({ createdAt: -1 });
-    console.log('[Banner] Fetched:', banner);
-    res.json(banner);
+    
+    if (banner) {
+      // Check and fix missing image
+      const bannerObj = banner.toObject();
+      if (bannerObj.imageUrl && !checkImageExists(bannerObj.imageUrl)) {
+        console.log(`[${new Date().toISOString()}] Missing banner image: ${bannerObj.imageUrl}`);
+        bannerObj.imageUrl = null;
+      }
+      console.log('[Banner] Fetched:', bannerObj);
+      res.json(bannerObj);
+    } else {
+      res.json(null);
+    }
   } catch (err) {
     logError('Fetch', err, req);
     res.status(500).json({ error: 'Failed to fetch banner', details: err.message });

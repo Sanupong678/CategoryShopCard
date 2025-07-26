@@ -146,11 +146,13 @@ export default {
       this.$emit('close');
     },
     getModalImageUrl(imagePath) {
-      if (!imagePath) return '/placeholder-product.jpg';
+      if (!imagePath || !imagePath.trim()) return '/placeholder-product.jpg';
       return this.backendUrl + imagePath;
     },
     handleModalImageError(event) {
+      console.warn('Modal image failed to load:', event.target.src);
       event.target.src = '/placeholder-product.jpg';
+      event.target.onerror = null; // Prevent infinite loop
     },
     formatPrice(price) {
       return new Intl.NumberFormat('th-TH').format(price);

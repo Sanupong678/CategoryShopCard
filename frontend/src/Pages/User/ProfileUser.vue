@@ -38,10 +38,10 @@
           <span class="extra-value">{{ profile.facebook || '-' }}</span>
         </div>
       </div>
-      <div v-if="profile.images.length > 1" class="profile-gallery-section">
+      <div v-if="profile.displayImages && profile.displayImages.length > 1" class="profile-gallery-section">
         <div class="gallery-title"><i class="fas fa-images"></i> แกลเลอรี่</div>
         <div class="gallery-thumbnails">
-          <img v-for="(img, idx) in profile.images" :key="idx" :src="img" class="gallery-thumb" :class="{active: idx === currentImageIndex}" @click="currentImageIndex = idx" />
+          <img v-for="(img, idx) in profile.displayImages" :key="idx" :src="getImageUrl(img)" class="gallery-thumb" :class="{active: idx === currentImageIndex}" @click="currentImageIndex = idx" />
         </div>
       </div>
     </div>
@@ -67,7 +67,7 @@
   </div>
   <div v-if="showQrcode" class="qrcode-modal-overlay" @click.self="showQrcode = false">
     <div class="qrcode-modal-content">
-      <img :src="profile.qrcode.startsWith('http') ? profile.qrcode : backendUrl + profile.qrcode" alt="QR Code" style="max-width:220px;max-height:220px;" />
+      <img :src="getQrcodeUrl()" alt="QR Code" style="max-width:220px;max-height:220px;" />
       <button class="close-btn" @click="showQrcode = false">ปิด</button>
     </div>
   </div>
@@ -103,7 +103,15 @@ export default {
   },
   computed: {
     currentImage() {
-      return this.profile.images.length > 0 ? this.profile.images[this.currentImageIndex] : '';
+      if (this.profile.displayImages && this.profile.displayImages.length > 0) {
+        const image = this.profile.displayImages[this.currentImageIndex];
+        // ตรวจสอบว่าเป็น Base64 หรือ URL
+        if (image && image.startsWith('data:image/')) {
+          return image; // Base64 image
+        }
+        return this.backendUrl + image; // URL image
+      }
+      return '';
     },
     facebookUrl() {
       if (!this.profile.facebook) return '';
@@ -115,23 +123,36 @@ export default {
     async fetchProfile() {
       try {
         const res = await axios.get(this.backendUrl + '/api/admin/profile');
-        let images = [];
-        if (res.data.imageUrls) images = res.data.imageUrls.map(url => this.backendUrl + url);
-        else if (res.data.imageUrl) images = [this.backendUrl + res.data.imageUrl];
-        this.profile = { ...this.profile, ...res.data, images };
+        this.profile = { ...this.profile, ...res.data };
         this.currentImageIndex = 0;
       } catch (err) {
         console.error('Error fetching profile:', err);
       }
     },
+    getImageUrl(image) {
+      if (!image) return '';
+      // ตรวจสอบว่าเป็น Base64 หรือ URL
+      if (image.startsWith('data:image/')) {
+        return image; // Base64 image
+      }
+      return this.backendUrl + image; // URL image
+    },
+    getQrcodeUrl() {
+      if (!this.profile.displayQrcode) return '';
+      // ตรวจสอบว่าเป็น Base64 หรือ URL
+      if (this.profile.displayQrcode.startsWith('data:image/')) {
+        return this.profile.displayQrcode; // Base64 image
+      }
+      return this.backendUrl + this.profile.displayQrcode; // URL image
+    },
     prevImage() {
-      if (this.profile.images.length > 1) {
-        this.currentImageIndex = (this.currentImageIndex - 1 + this.profile.images.length) % this.profile.images.length;
+      if (this.profile.displayImages && this.profile.displayImages.length > 1) {
+        this.currentImageIndex = (this.currentImageIndex - 1 + this.profile.displayImages.length) % this.profile.displayImages.length;
       }
     },
     nextImage() {
-      if (this.profile.images.length > 1) {
-        this.currentImageIndex = (this.currentImageIndex + 1) % this.profile.images.length;
+      if (this.profile.displayImages && this.profile.displayImages.length > 1) {
+        this.currentImageIndex = (this.currentImageIndex + 1) % this.profile.displayImages.length;
       }
     },
     async handleAdminLogin() {

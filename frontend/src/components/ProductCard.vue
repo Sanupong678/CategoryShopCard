@@ -99,12 +99,21 @@ export default {
   methods: {
     getProductImage() {
       if (this.product.images && this.product.images.length > 0) {
-        return this.backendUrl + this.product.images[0];
+        const imageUrl = this.product.images[0];
+        if (imageUrl && imageUrl.trim()) {
+          // ตรวจสอบว่าเป็น Base64 หรือ URL
+          if (imageUrl.startsWith('data:image/')) {
+            return imageUrl; // Base64 image
+          }
+          return this.backendUrl + imageUrl; // URL image
+        }
       }
       return '/placeholder-product.jpg';
     },
     handleImageError(event) {
+      console.warn('Image failed to load:', event.target.src);
       event.target.src = '/placeholder-product.jpg';
+      event.target.onerror = null; // Prevent infinite loop
     },
     formatPrice(price) {
       return new Intl.NumberFormat('th-TH').format(price);

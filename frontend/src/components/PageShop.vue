@@ -174,19 +174,35 @@ export default {
     },
     getProductImage(product) {
       if (product.images && product.images.length > 0) {
-        return this.backendUrl + product.images[0];
+        const imageUrl = product.images[0];
+        if (imageUrl && imageUrl.trim()) {
+          // ตรวจสอบว่าเป็น Base64 หรือ URL
+          if (imageUrl.startsWith('data:image/')) {
+            return imageUrl; // Base64 image
+          }
+          return this.backendUrl + imageUrl; // URL image
+        }
       }
       return '/placeholder-product.jpg';
     },
     getModalImageUrl(imagePath) {
-      if (!imagePath) return '/placeholder-product.jpg';
-      return this.backendUrl + imagePath;
+      if (!imagePath || !imagePath.trim()) return '/placeholder-product.jpg';
+      
+      // ตรวจสอบว่าเป็น Base64 หรือ URL
+      if (imagePath.startsWith('data:image/')) {
+        return imagePath; // Base64 image
+      }
+      return this.backendUrl + imagePath; // URL image
     },
     handleImageError(event) {
+      console.warn('Image failed to load:', event.target.src);
       event.target.src = '/placeholder-product.jpg';
+      event.target.onerror = null; // Prevent infinite loop
     },
     handleModalImageError(event) {
+      console.warn('Modal image failed to load:', event.target.src);
       event.target.src = '/placeholder-product.jpg';
+      event.target.onerror = null; // Prevent infinite loop
     },
     formatPrice(price) {
       return new Intl.NumberFormat('th-TH').format(price);

@@ -3,6 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors =require('cors');
 const path = require('path');
+const fs = require('fs');
 const bannerRoutes = require('./routes/banner');
 const categoryRoutes = require('./routes/category');
 const productRoutes = require('./routes/product');
@@ -19,6 +20,18 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser());
+
+// Middleware to check if image file exists before serving
+app.use('/uploads', (req, res, next) => {
+  const filePath = path.join(__dirname, 'uploads', req.url);
+  if (fs.existsSync(filePath)) {
+    next();
+  } else {
+    console.log(`[${new Date().toISOString()}] Missing file requested: ${req.url}`);
+    res.status(404).json({ error: 'Image file not found' });
+  }
+});
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // 🔽 เชื่อม MONGO_URL ให้ตรงกับ .env
