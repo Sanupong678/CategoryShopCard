@@ -2,6 +2,7 @@ const Product = require('../models/Product');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { convertImageToBase64, isBase64Image } = require('../utils/imageUtils');
 
 // Helper function to check if image file exists
 const checkImageExists = (imageUrl) => {
@@ -56,6 +57,14 @@ const getAllProducts = async (req, res) => {
     // Check and fix missing images
     const productsWithValidImages = products.map(product => {
       const productObj = product.toObject();
+      
+      // Check if using Base64 or URL
+      if (productObj.imageType === 'base64' && productObj.imagesBase64 && productObj.imagesBase64.length > 0) {
+        // Use Base64 directly - no need to check file existence
+        return productObj;
+      }
+      
+      // Fallback for URL-based images
       if (productObj.images && Array.isArray(productObj.images)) {
         productObj.images = productObj.images.filter(imageUrl => {
           const exists = checkImageExists(imageUrl);
@@ -104,8 +113,24 @@ const createProduct = async (req, res) => {
   try {
     const { nameproduct, price, category, subcategory, description, phone } = req.body;
     
-    // Get uploaded image files
-    const imageUrls = req.files ? req.files.map(file => `/uploads/products/${file.filename}`) : [];
+    let imagesBase64 = [];
+    let imageType = 'url';
+    
+    // Convert uploaded files to Base64
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        const imagePath = path.join(__dirname, '..', 'uploads', 'products', file.filename);
+        const imageBase64 = convertImageToBase64(imagePath);
+        if (imageBase64) {
+          imagesBase64.push(imageBase64);
+        }
+        // Delete temporary file
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+        }
+      }
+      imageType = 'base64';
+    }
     
     const product = new Product({
       nameproduct,
@@ -114,7 +139,8 @@ const createProduct = async (req, res) => {
       subcategory,
       description,
       phone,
-      images: imageUrls
+      imagesBase64,
+      imageType
     });
     
     const savedProduct = await product.save();
@@ -130,8 +156,24 @@ const updateProduct = async (req, res) => {
   try {
     const { nameproduct, price, category, subcategory, description, phone } = req.body;
     
-    // Get uploaded image files
-    const newImageUrls = req.files ? req.files.map(file => `/uploads/products/${file.filename}`) : [];
+    let imagesBase64 = [];
+    let imageType = 'url';
+    
+    // Convert uploaded files to Base64
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        const imagePath = path.join(__dirname, '..', 'uploads', 'products', file.filename);
+        const imageBase64 = convertImageToBase64(imagePath);
+        if (imageBase64) {
+          imagesBase64.push(imageBase64);
+        }
+        // Delete temporary file
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+        }
+      }
+      imageType = 'base64';
+    }
     
     const updateData = {
       nameproduct,
@@ -139,12 +181,13 @@ const updateProduct = async (req, res) => {
       category,
       subcategory,
       description,
-      phone
+      phone,
+      imageType
     };
     
-    // If new images are uploaded, replace the images array
-    if (newImageUrls.length > 0) {
-      updateData.images = newImageUrls;
+    // If new images are uploaded, update the imagesBase64 array
+    if (imagesBase64.length > 0) {
+      updateData.imagesBase64 = imagesBase64;
     }
     
     const product = await Product.findByIdAndUpdate(
@@ -172,8 +215,8 @@ const deleteProduct = async (req, res) => {
       return res.status(404).json({ message: 'ไม่พบสินค้านี้' });
     }
     
-    // Delete associated images from filesystem
-    if (product.images && product.images.length > 0) {
+    // Delete associated images from filesystem (only for URL-based images)
+    if (product.imageType === 'url' && product.images && product.images.length > 0) {
       product.images.forEach(imagePath => {
         const fullPath = path.join(__dirname, '..', imagePath);
         if (fs.existsSync(fullPath)) {
