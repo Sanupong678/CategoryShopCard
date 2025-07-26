@@ -1,6 +1,7 @@
 const Banner = require('../models/Banner');
 const path = require('path');
 const fs = require('fs');
+const { convertImageToBase64, isBase64Image } = require('../utils/imageUtils');
 
 function logError(context, err, req) {
   console.error(`[${new Date().toISOString()}] [Banner] ${context} Error:`);
@@ -25,11 +26,30 @@ exports.createBanner = async (req, res) => {
     console.log('[Banner] createBanner req.body:', req.body);
     console.log('[Banner] createBanner req.file:', req.file);
     const { title, description } = req.body;
-    let imageUrl = '';
+    
+    let imageBase64 = null;
+    let imageType = 'url';
+    
     if (req.file) {
-      imageUrl = `/uploads/${req.file.filename}`;
+      const imagePath = path.join(__dirname, '..', 'uploads', req.file.filename);
+      imageBase64 = convertImageToBase64(imagePath);
+      if (!imageBase64) {
+        return res.status(500).json({ message: 'เกิดข้อผิดพลาดในการประมวลผลรูปภาพ' });
+      }
+      imageType = 'base64';
+      
+      // Delete temporary file
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+      }
     }
-    const banner = new Banner({ title, description, imageUrl });
+    
+    const banner = new Banner({ 
+      title, 
+      description, 
+      imageBase64,
+      imageType
+    });
     await banner.save();
     console.log('[Banner] Created:', banner);
     res.json(banner);
@@ -45,12 +65,17 @@ exports.getBanner = async (req, res) => {
     const banner = await Banner.findOne().sort({ createdAt: -1 });
     
     if (banner) {
-      // Check and fix missing image
       const bannerObj = banner.toObject();
-      if (bannerObj.imageUrl && !checkImageExists(bannerObj.imageUrl)) {
+      
+      // Check image type and handle accordingly
+      if (bannerObj.imageType === 'base64' && bannerObj.imageBase64) {
+        // Use base64 directly
+        bannerObj.image = bannerObj.imageBase64;
+      } else if (bannerObj.imageUrl && !checkImageExists(bannerObj.imageUrl)) {
         console.log(`[${new Date().toISOString()}] Missing banner image: ${bannerObj.imageUrl}`);
         bannerObj.imageUrl = null;
       }
+      
       console.log('[Banner] Fetched:', bannerObj);
       res.json(bannerObj);
     } else {
@@ -69,13 +94,32 @@ exports.updateBanner = async (req, res) => {
     console.log('[Banner] updateBanner req.file:', req.file);
     const { id } = req.params;
     const { title, description } = req.body;
-    let imageUrl = req.body.imageUrl;
+    
+    let imageBase64 = null;
+    let imageType = 'url';
+    
     if (req.file) {
-      imageUrl = `/uploads/${req.file.filename}`;
+      const imagePath = path.join(__dirname, '..', 'uploads', req.file.filename);
+      imageBase64 = convertImageToBase64(imagePath);
+      if (!imageBase64) {
+        return res.status(500).json({ message: 'เกิดข้อผิดพลาดในการประมวลผลรูปภาพ' });
+      }
+      imageType = 'base64';
+      
+      // Delete temporary file
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+      }
     }
+    
+    const updateData = { title, description, imageType };
+    if (imageBase64) {
+      updateData.imageBase64 = imageBase64;
+    }
+    
     const banner = await Banner.findByIdAndUpdate(
       id,
-      { title, description, imageUrl },
+      updateData,
       { new: true }
     );
     console.log('[Banner] Updated:', banner);

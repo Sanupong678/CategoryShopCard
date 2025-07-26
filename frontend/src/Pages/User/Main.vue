@@ -3,7 +3,7 @@
     <!-- Banner Section -->
     <div class="banner-section">
       <div v-if="banner && banner.imageUrl" class="banner-display">
-        <img :src="backendUrl + banner.imageUrl" class="banner-image" />
+        <img :src="getBannerImageUrl(banner)" class="banner-image" />
       </div>
     </div>
 
@@ -151,6 +151,7 @@ export default {
       try {
         const res = await axios.get(this.backendUrl + '/api/banner');
         this.banner = res.data;
+        console.log('Banner data:', this.banner);
       } catch (error) {
         console.error('Error fetching banner:', error);
       }
@@ -219,6 +220,16 @@ export default {
       }
       if (category.imageUrl) {
         return this.backendUrl + category.imageUrl; // URL image
+      }
+      // ใช้ data URL แทนไฟล์
+      return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlPC90ZXh0Pjwvc3ZnPg==';
+    },
+    getBannerImageUrl(banner) {
+      if (banner.image && banner.image.startsWith('data:image/')) {
+        return banner.image; // Base64 image
+      }
+      if (banner.imageUrl) {
+        return this.backendUrl + banner.imageUrl; // URL image
       }
       // ใช้ data URL แทนไฟล์
       return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlPC90ZXh0Pjwvc3ZnPg==';

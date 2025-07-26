@@ -11,14 +11,13 @@
         <input ref="fileInput" type="file" accept="image/*" @change="onFileChange" style="display:none" />
       </div>
       <div v-else class="banner-display">
-        <img v-if="banner && banner.imageUrl" :src="backendUrl + banner.imageUrl" class="banner-image" />
+        <img v-if="banner && banner.imageUrl" :src="getBannerImageUrl(banner)" class="banner-image" />
         <div class="banner-overlay">
           <button class="edit-banner-btn" @click="triggerFileInput">
-            <span class="edit-icon">✏️</span>
+            <span class="btn-icon">📷</span>
             แก้ไขแบนเนอร์
           </button>
         </div>
-        <input ref="fileInput" type="file" accept="image/*" @change="onFileChange" style="display:none" />
       </div>
     </div>
     
@@ -540,6 +539,15 @@ export default {
       // ใช้ data URL แทนไฟล์
       return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlPC90ZXh0Pjwvc3ZnPg==';
     },
+    getBannerImageUrl(banner) {
+      if (banner.image && banner.image.startsWith('data:image/')) {
+        return banner.image; // Base64 image
+      }
+      if (banner.imageUrl) {
+        return this.backendUrl + banner.imageUrl; // URL image
+      }
+      return '/placeholder-banner.jpg'; // Fallback for banner image
+    }
   },
   mounted() {
     // ตรวจสอบสิทธิ์ก่อนเข้าหน้า

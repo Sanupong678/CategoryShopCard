@@ -98,10 +98,10 @@ export default {
   emits: ['card-click', 'contact', 'edit', 'delete'],
   methods: {
     getProductImage() {
-      if (this.product.images && this.product.images.length > 0) {
-        const imageUrl = this.product.images[0];
+      // ตรวจสอบว่าเป็น Base64 หรือ URL
+      if (this.product.displayImages && this.product.displayImages.length > 0) {
+        const imageUrl = this.product.displayImages[0];
         if (imageUrl && imageUrl.trim()) {
-          // ตรวจสอบว่าเป็น Base64 หรือ URL
           if (imageUrl.startsWith('data:image/')) {
             return imageUrl; // Base64 image
           }

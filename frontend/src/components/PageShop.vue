@@ -9,8 +9,8 @@
         <div class="category-info">
           <div class="category-image-container">
             <img 
-              v-if="category && category.imageUrl" 
-              :src="backendUrl + category.imageUrl" 
+              v-if="category" 
+              :src="getCategoryImageUrl(category)" 
               class="category-image" 
               :alt="category?.name"
             />
@@ -260,6 +260,17 @@ export default {
       if (product.phone) {
         window.open(`tel:${product.phone}`, '_blank');
       }
+    },
+    getCategoryImageUrl(category) {
+      // ตรวจสอบว่าเป็น Base64 หรือ URL
+      if (category.image && category.image.startsWith('data:image/')) {
+        return category.image; // Base64 image
+      }
+      if (category.imageUrl) {
+        return this.backendUrl + category.imageUrl; // URL image
+      }
+      // ใช้ data URL แทนไฟล์
+      return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlPC90ZXh0Pjwvc3ZnPg==';
     }
   }
 }

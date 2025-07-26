@@ -11,7 +11,7 @@
         <div class="product-images-section">
           <div class="main-image-container">
             <img 
-              :src="getModalImageUrl(product.images[currentImageIndex])" 
+              :src="getModalImageUrl(product.displayImages[currentImageIndex])" 
               :alt="product.nameproduct"
               class="modal-main-image"
               @error="handleModalImageError"
@@ -19,14 +19,14 @@
             />
             <!-- Navigation Arrows -->
             <button 
-              v-if="product.images && product.images.length > 1" 
+              v-if="product.displayImages && product.displayImages.length > 1" 
               class="modal-nav-arrow prev" 
               @click="previousModalImage"
             >
               ‹
             </button>
             <button 
-              v-if="product.images && product.images.length > 1" 
+              v-if="product.displayImages && product.displayImages.length > 1" 
               class="modal-nav-arrow next" 
               @click="nextModalImage"
             >
@@ -35,10 +35,10 @@
           </div>
           
           <!-- Thumbnail Navigation -->
-          <div v-if="product.images && product.images.length > 1" class="modal-thumbnail-nav">
+          <div v-if="product.displayImages && product.displayImages.length > 1" class="modal-thumbnail-nav">
             <div class="modal-thumbnail-container">
               <button 
-                v-for="(image, index) in product.images" 
+                v-for="(image, index) in product.displayImages" 
                 :key="index"
                 class="modal-thumbnail-btn"
                 :class="{ active: currentImageIndex === index }"
@@ -101,9 +101,9 @@
     <!-- Image Popup Modal -->
     <div v-if="showImagePopup" class="image-popup-overlay">
       <div class="image-popup-content">
-        <button v-if="product.images && product.images.length > 1" class="image-popup-arrow left" @click.stop="popupPrevImage">‹</button>
-        <img :src="getModalImageUrl(product.images[currentImageIndex])" :alt="product.nameproduct" class="image-popup-img" />
-        <button v-if="product.images && product.images.length > 1" class="image-popup-arrow right" @click.stop="popupNextImage">›</button>
+        <button v-if="product.displayImages && product.displayImages.length > 1" class="image-popup-arrow left" @click.stop="popupPrevImage">‹</button>
+        <img :src="getModalImageUrl(product.displayImages[currentImageIndex])" :alt="product.nameproduct" class="image-popup-img" />
+        <button v-if="product.displayImages && product.displayImages.length > 1" class="image-popup-arrow right" @click.stop="popupNextImage">›</button>
         <button class="image-popup-close" @click="showImagePopup = false">×</button>
       </div>
     </div>
@@ -150,7 +150,6 @@ export default {
         // ใช้ data URL แทนไฟล์
         return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlPC90ZXh0Pjwvc3ZnPg==';
       }
-      
       // ตรวจสอบว่าเป็น Base64 หรือ URL
       if (imagePath.startsWith('data:image/')) {
         return imagePath; // Base64 image
@@ -182,15 +181,15 @@ export default {
     },
     // Modal Image Navigation
     previousModalImage() {
-      if (this.product.images && this.product.images.length > 1) {
+      if (this.product.displayImages && this.product.displayImages.length > 1) {
         this.currentImageIndex = this.currentImageIndex === 0 
-          ? this.product.images.length - 1 
+          ? this.product.displayImages.length - 1 
           : this.currentImageIndex - 1;
       }
     },
     nextModalImage() {
-      if (this.product.images && this.product.images.length > 1) {
-        this.currentImageIndex = this.currentImageIndex === this.product.images.length - 1 
+      if (this.product.displayImages && this.product.displayImages.length > 1) {
+        this.currentImageIndex = this.currentImageIndex === this.product.displayImages.length - 1 
           ? 0 
           : this.currentImageIndex + 1;
       }
@@ -209,15 +208,15 @@ export default {
       }
     },
     popupPrevImage() {
-      if (this.product.images && this.product.images.length > 1) {
+      if (this.product.displayImages && this.product.displayImages.length > 1) {
         this.currentImageIndex = this.currentImageIndex === 0
-          ? this.product.images.length - 1
+          ? this.product.displayImages.length - 1
           : this.currentImageIndex - 1;
       }
     },
     popupNextImage() {
-      if (this.product.images && this.product.images.length > 1) {
-        this.currentImageIndex = this.currentImageIndex === this.product.images.length - 1
+      if (this.product.displayImages && this.product.displayImages.length > 1) {
+        this.currentImageIndex = this.currentImageIndex === this.product.displayImages.length - 1
           ? 0
           : this.currentImageIndex + 1;
       }
