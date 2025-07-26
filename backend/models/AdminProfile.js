@@ -11,6 +11,8 @@ const AdminProfileSchema = new mongoose.Schema({
   facebook: { type: String },
   lineId: { type: String },
   imageUrls: [{ type: String }], // รองรับหลายรูป
+  lineQrcodeText: { type: String }, // ข้อความ line
+  qrcode: { type: String }, // path รูป QR code
 }, { timestamps: true });
 
 module.exports = mongoose.model('AdminProfile', AdminProfileSchema); 

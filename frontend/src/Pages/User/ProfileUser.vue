@@ -18,9 +18,9 @@
         <a v-if="profile.facebook" :href="facebookUrl" target="_blank" class="contact-btn facebook" title="Facebook">
           <i class="fab fa-facebook"></i> Facebook
         </a>
-        <a v-if="profile.lineId" :href="'https://line.me/ti/p/' + profile.lineId" target="_blank" class="contact-btn line" title="Line">
-          <i class="fab fa-line"></i> Line
-        </a>
+        <button v-if="profile.qrcode" class="contact-btn line" @click="showQrcode = true">
+          <i class="fas fa-qrcode"></i> QR Code Line
+        </button>
       </div>
       <div class="profile-about-section">
         <div class="about-title"><i class="fas fa-user"></i> เกี่ยวกับฉัน</div>
@@ -65,6 +65,12 @@
       </div>
     </div>
   </div>
+  <div v-if="showQrcode" class="qrcode-modal-overlay" @click.self="showQrcode = false">
+    <div class="qrcode-modal-content">
+      <img :src="profile.qrcode.startsWith('http') ? profile.qrcode : backendUrl + profile.qrcode" alt="QR Code" style="max-width:220px;max-height:220px;" />
+      <button class="close-btn" @click="showQrcode = false">ปิด</button>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -92,6 +98,7 @@ export default {
       loginUsername: '',
       loginPassword: '',
       loginError: false,
+      showQrcode: false,
     };
   },
   computed: {
@@ -127,13 +134,18 @@ export default {
         this.currentImageIndex = (this.currentImageIndex + 1) % this.profile.images.length;
       }
     },
-    handleAdminLogin() {
-      if (this.loginUsername === 'admin' && this.loginPassword === '1234') {
+    async handleAdminLogin() {
+      try {
+        const res = await axios.post('http://localhost:5000/api/auth/login', {
+          username: this.loginUsername,
+          password: this.loginPassword
+        });
+        localStorage.setItem('token', res.data.token);
         localStorage.setItem('isAdmin', '1');
         this.showLoginModal = false;
         this.loginError = false;
         this.$router.push('/admin');
-      } else {
+      } catch (err) {
         this.loginError = true;
       }
     },
@@ -333,6 +345,25 @@ export default {
 .gallery-thumb:hover {
   border: 2px solid #667eea;
 }
+.profile-qrcode-section {
+  margin: 18px 0 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.qrcode-img-box img {
+  border: 1.5px solid #ccc;
+  border-radius: 10px;
+  background: #fff;
+  padding: 6px;
+}
+.qrcode-text {
+  font-size: 1.08rem;
+  color: #22223b;
+  font-weight: 600;
+  margin-top: 4px;
+}
 .admin-login-btn-wrapper {
   display: flex;
   justify-content: center;
@@ -428,6 +459,41 @@ export default {
   background: #ccc;
 }
 .modal-btn:hover {
+  background: #4b5bdc;
+}
+.qrcode-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+}
+.qrcode-modal-content {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.18);
+  padding: 32px 28px 24px 28px;
+  min-width: 220px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+.close-btn {
+  background: #667eea;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+.close-btn:hover {
   background: #4b5bdc;
 }
 @media (max-width: 600px) {

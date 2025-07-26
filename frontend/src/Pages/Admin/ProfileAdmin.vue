@@ -1,5 +1,8 @@
 <template>
   <div class="profile-admin-wrapper">
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+      <button class="btn-logout" @click="logout">Logout</button>
+    </div>
     <h2 class="profile-title">ข้อมูลผู้ประกอบการ</h2>
     <div v-if="!isAdmin" class="profile-login-bar">
       <input v-model="loginPassword" type="password" placeholder="รหัสผ่านผู้ดูแลระบบ" class="login-input" />
@@ -17,7 +20,8 @@
           </div>
           <button class="arrow-btn right" @click="nextImage" :disabled="profile.images.length <= 1">&#62;</button>
         </div>
-        <input type="file" @change="onFileChange" accept="image/*" id="profile-upload" style="display:none" multiple />
+        <!-- อัปโหลดรูปโปรไฟล์ -->
+        <input type="file" name="images" ref="profileUpload" @change="onFileChange" accept="image/*" id="profile-upload" style="display:none" multiple />
         <label for="profile-upload" class="btn-upload">เลือกไฟล์รูปภาพ</label>
       </div>
       <!-- ขวา: ฟอร์ม 2 คอลัมน์ -->
@@ -65,6 +69,14 @@
             <input v-model="profile.lineId" type="text" />
           </div>
         </div>
+        <!-- อัปโหลด QR code -->
+        <div class="form-group">
+          <label>QR Code Line</label>
+          <input type="file" name="qrcode" @change="onQrcodeChange" accept="image/*" />
+          <div v-if="profile.qrcode" class="qrcode-preview">
+            <img :src="profile.qrcode.startsWith('http') ? profile.qrcode : backendUrl + profile.qrcode" alt="QR Code" style="max-width:120px;max-height:120px;" />
+          </div>
+        </div>
         <div class="profile-btn-row">
           <button type="button" class="btn-cancel" @click="fetchProfile">ยกเลิก</button>
           <button type="submit" class="btn-primary">ยืนยัน</button>
@@ -91,12 +103,15 @@ export default {
         facebook: '',
         lineId: '',
         images: [], // array of image url or blob
+        qrcode: '', // เพิ่มตัวแปรสำหรับ QR code
+        lineQrcodeText: '', // เพิ่มตัวแปรสำหรับข้อความใต้ QR
       },
       currentImageIndex: 0,
       backendUrl: 'http://localhost:5000',
       isAdmin: false, // เพิ่มตัวแปรสำหรับตรวจสอบสิทธิ์
       loginPassword: '', // เพิ่มตัวแปรสำหรับรหัสผ่าน
       loginError: false, // เพิ่มตัวแปรสำหรับแสดงข้อความผิดพลาด
+      qrcodeFile: null, // เพิ่มตัวแปรสำหรับไฟล์ QR code
     };
   },
   computed: {
@@ -112,7 +127,10 @@ export default {
   methods: {
     async fetchProfile() {
       try {
-        const res = await axios.get(this.backendUrl + '/api/admin/profile');
+        const token = localStorage.getItem('token');
+        const res = await axios.get(this.backendUrl + '/api/admin/profile', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         // รองรับหลายรูป (mockup: ถ้ามี imageUrl เป็น string ให้แปลงเป็น array)
         let images = [];
         if (res.data.imageUrls) images = res.data.imageUrls.map(url => this.backendUrl + url);
@@ -120,7 +138,11 @@ export default {
         this.profile = { ...this.profile, ...res.data, images };
         this.currentImageIndex = 0;
       } catch (err) {
-        console.error('Error fetching profile:', err);
+        if (err.response && err.response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('isAdmin');
+          this.$router.replace('/');
+        }
       }
     },
     onFileChange(e) {
@@ -128,6 +150,13 @@ export default {
       this.profile.images = files.map(file => URL.createObjectURL(file));
       // ในการอัปโหลดจริงควรเก็บไฟล์ไว้ด้วย (mockup นี้แค่แสดง preview)
       this.currentImageIndex = 0;
+    },
+    onQrcodeChange(e) {
+      const file = e.target.files[0];
+      if (file) {
+        this.profile.qrcode = URL.createObjectURL(file);
+        this.qrcodeFile = file;
+      }
     },
     prevImage() {
       if (this.profile.images.length > 1) {
@@ -143,35 +172,67 @@ export default {
       try {
         const formData = new FormData();
         for (const key in this.profile) {
-          if (key === 'images') continue;
+          if (key === 'images' || key === 'qrcode') continue;
           if (this.profile[key]) formData.append(key, this.profile[key]);
         }
-        // mockup: ยังไม่รองรับอัปโหลดหลายไฟล์จริง (ต้องเพิ่ม logic backend)
+        // แนบไฟล์รูปโปรไฟล์
+        if (this.$refs.profileUpload && this.$refs.profileUpload.files.length > 0) {
+          Array.from(this.$refs.profileUpload.files).forEach(file => {
+            formData.append('images', file);
+          });
+        }
+        // แนบไฟล์ QR code
+        if (this.qrcodeFile) {
+          formData.append('qrcode', this.qrcodeFile);
+        }
+        const token = localStorage.getItem('token');
         await axios.put(this.backendUrl + '/api/admin/profile', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
+          headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` }
         });
         alert('บันทึกโปรไฟล์สำเร็จ');
         this.fetchProfile();
       } catch (err) {
-        alert('เกิดข้อผิดพลาดในการบันทึกโปรไฟล์');
+        if (err.response && err.response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('isAdmin');
+          this.$router.replace('/');
+        } else {
+          alert('เกิดข้อผิดพลาดในการบันทึกโปรไฟล์');
+        }
       }
     },
-    handleLogin() {
-      const ADMIN_PASSWORD = 'admin123'; // ตั้งค่ารหัสผ่านที่ต้องการ
-      if (this.loginPassword === ADMIN_PASSWORD) {
+    async handleLogin() {
+      try {
+        const res = await axios.post('http://localhost:5000/api/auth/login', {
+          username: 'admin',
+          password: this.loginPassword
+        });
+        localStorage.setItem('token', res.data.token);
         this.isAdmin = true;
         localStorage.setItem('isAdmin', '1');
         this.loginError = false;
-        this.$router.push('/admin'); // redirect ไปหน้าแอดมินทันที
-      } else {
+        this.$router.push('/admin');
+      } catch (err) {
         this.loginError = true;
       }
+    },
+    async logout() {
+      try {
+        await axios.post(this.backendUrl + '/api/auth/logout', {}, { withCredentials: true });
+      } catch (e) {}
+      localStorage.removeItem('token');
+      localStorage.removeItem('isAdmin');
+      this.$router.replace('/');
     }
   },
   mounted() {
     this.fetchProfile();
     // ตรวจสอบสิทธิ์ก่อนเข้าหน้า
     const storedIsAdmin = localStorage.getItem('isAdmin');
+    if (storedIsAdmin !== '1') {
+      this.$router.replace('/');
+      return;
+    }
     if (storedIsAdmin === '1') {
       this.isAdmin = true;
     }
@@ -384,13 +445,226 @@ export default {
   transition: background 0.2s;
 }
 .btn-go-admin:hover { background: #4b5bdc; }
-@media (max-width: 1100px) {
-  .profile-admin-flex { flex-direction: column; gap: 24px; }
-  .profile-left { flex: none; flex-direction: row; justify-content: flex-start; gap: 24px; }
-  .profile-image-box { margin: 0 auto; }
+.qrcode-preview {
+  margin-top: 10px;
+  text-align: center;
 }
-@media (max-width: 700px) {
-  .profile-admin-wrapper { padding: 10px; }
-  .profile-form-grid { grid-template-columns: 1fr; }
+.qrcode-preview img {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+.btn-logout {
+  background: #e74c3c;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-logout:hover { background: #c0392b; }
+/* Responsive Design */
+@media (max-width: 1400px) {
+  .profile-admin-wrapper {
+    max-width: 1000px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .profile-admin-wrapper {
+    max-width: 100%;
+    padding: 24px 16px;
+  }
+  
+  .profile-admin-flex {
+    gap: 24px;
+  }
+  
+  .profile-left {
+    flex: 0 0 300px;
+  }
+  
+  .profile-image-box {
+    width: 280px;
+    height: 320px;
+  }
+}
+
+@media (max-width: 992px) {
+  .profile-admin-wrapper {
+    padding: 20px 12px;
+  }
+  
+  .profile-admin-flex {
+    gap: 20px;
+  }
+  
+  .profile-left {
+    flex: 0 0 280px;
+  }
+  
+  .profile-image-box {
+    width: 260px;
+    height: 300px;
+  }
+  
+  .profile-form-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .profile-admin-wrapper {
+    padding: 16px 10px;
+  }
+  
+  .profile-admin-flex {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .profile-left {
+    flex: none;
+    flex-direction: row;
+    justify-content: center;
+    gap: 20px;
+  }
+  
+  .profile-image-box {
+    width: 240px;
+    height: 280px;
+    margin: 0;
+  }
+  
+  .profile-form-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .profile-title {
+    font-size: 20px;
+  }
+  
+  .btn-upload {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+  
+  .btn-primary,
+  .btn-cancel {
+    padding: 10px 24px;
+    font-size: 14px;
+  }
+  
+  .btn-logout {
+    padding: 8px 20px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-admin-wrapper {
+    padding: 12px 8px;
+  }
+  
+  .profile-admin-flex {
+    gap: 16px;
+  }
+  
+  .profile-left {
+    gap: 16px;
+  }
+  
+  .profile-image-box {
+    width: 200px;
+    height: 240px;
+  }
+  
+  .profile-title {
+    font-size: 18px;
+  }
+  
+  .profile-form-grid {
+    gap: 12px;
+  }
+  
+  .form-group input[type="text"],
+  .form-group input[type="email"],
+  .form-group input[type="tel"],
+  .form-group input[type="number"],
+  .form-group textarea {
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+  
+  .btn-upload {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+  
+  .btn-primary,
+  .btn-cancel {
+    padding: 8px 20px;
+    font-size: 13px;
+  }
+  
+  .btn-logout {
+    padding: 6px 16px;
+    font-size: 13px;
+  }
+  
+  .btn-fb {
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+  
+  .login-input {
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+  
+  .btn-login {
+    padding: 10px 24px;
+    font-size: 14px;
+  }
+}
+
+/* Tablet Landscape */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .profile-admin-wrapper {
+    padding: 18px 14px;
+  }
+  
+  .profile-left {
+    flex: 0 0 320px;
+  }
+  
+  .profile-image-box {
+    width: 300px;
+    height: 340px;
+  }
+}
+
+/* Large Desktop */
+@media (min-width: 1600px) {
+  .profile-admin-wrapper {
+    max-width: 1200px;
+  }
+  
+  .profile-admin-flex {
+    gap: 40px;
+  }
+  
+  .profile-left {
+    flex: 0 0 380px;
+  }
+  
+  .profile-image-box {
+    width: 360px;
+    height: 400px;
+  }
 }
 </style>

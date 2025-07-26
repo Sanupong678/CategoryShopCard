@@ -199,6 +199,7 @@ export default {
   width: 220px;
   height: 320px;
   flex-shrink: 0;
+  z-index: 1;
 }
 
 .product-card:hover {
@@ -428,6 +429,40 @@ export default {
 }
 
 /* Responsive Design for Product Card */
+@media (max-width: 1200px) {
+  .product-card {
+    width: 100%;
+    height: 320px;
+  }
+  
+  .product-image-container {
+    height: 140px;
+  }
+  
+  .product-info {
+    height: 180px;
+    padding: 14px;
+  }
+  
+  .product-name {
+    font-size: 14px;
+  }
+  
+  .product-price {
+    font-size: 16px;
+  }
+  
+  .product-meta {
+    gap: 4px;
+  }
+  
+  .product-category,
+  .product-subcategory {
+    font-size: 8px;
+    padding: 1px 4px;
+  }
+}
+
 @media (max-width: 768px) {
   .product-card {
     width: 100%;
@@ -449,6 +484,25 @@ export default {
   
   .product-price {
     font-size: 15px;
+  }
+  
+  .product-meta {
+    gap: 3px;
+  }
+  
+  .product-category,
+  .product-subcategory {
+    font-size: 7px;
+    padding: 1px 3px;
+  }
+  
+  .contact-btn {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+  
+  .btn-icon {
+    font-size: 12px;
   }
 }
 
@@ -473,6 +527,75 @@ export default {
   
   .product-price {
     font-size: 14px;
+  }
+  
+  .product-meta {
+    gap: 2px;
+  }
+  
+  .product-category,
+  .product-subcategory {
+    font-size: 6px;
+    padding: 1px 2px;
+  }
+  
+  .contact-btn {
+    padding: 5px 8px;
+    font-size: 10px;
+  }
+  
+  .btn-icon {
+    font-size: 11px;
+  }
+  
+  .admin-actions {
+    padding: 0 10px 10px 10px;
+    gap: 6px;
+  }
+  
+  .edit-btn, .delete-btn {
+    padding: 6px 8px;
+    font-size: 10px;
+  }
+}
+
+/* Tablet Landscape */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .product-card {
+    height: 300px;
+  }
+  
+  .product-image-container {
+    height: 130px;
+  }
+  
+  .product-info {
+    height: 170px;
+    padding: 13px;
+  }
+}
+
+/* Large Desktop */
+@media (min-width: 1600px) {
+  .product-card {
+    height: 340px;
+  }
+  
+  .product-image-container {
+    height: 150px;
+  }
+  
+  .product-info {
+    height: 190px;
+    padding: 16px;
+  }
+  
+  .product-name {
+    font-size: 15px;
+  }
+  
+  .product-price {
+    font-size: 17px;
   }
 }
 </style> 

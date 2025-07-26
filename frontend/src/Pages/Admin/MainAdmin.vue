@@ -299,10 +299,17 @@ export default {
   methods: {
     async fetchBanner() {
       try {
-        const res = await axios.get(this.backendUrl + '/api/banner');
+        const token = localStorage.getItem('token');
+        const res = await axios.get(this.backendUrl + '/api/banner', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         this.banner = res.data;
       } catch (error) {
-        console.error('Error fetching banner:', error);
+        if (error.response && error.response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('isAdmin');
+          this.$router.replace('/');
+        }
       }
     },
     async fetchCategories() {
@@ -361,7 +368,12 @@ export default {
           title: this.whyTitle,
           subtitle: this.whySubtitle
         };
-        await axios.put(this.backendUrl + '/api/whycontent', payload);
+        const token = localStorage.getItem('token');
+        await axios.put(this.backendUrl + '/api/whycontent', payload, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
         await this.fetchWhyContent();
         this.showWhyEdit = false;
       } catch (e) {
@@ -377,13 +389,14 @@ export default {
       const formData = new FormData();
       formData.append('image', file);
       try {
+        const token = localStorage.getItem('token');
         if (this.banner && this.banner._id) {
           await axios.put(this.backendUrl + `/api/banner/${this.banner._id}`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
+            headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` }
           });
         } else {
           await axios.post(this.backendUrl + '/api/banner', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
+            headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` }
           });
         }
         this.fetchBanner();
@@ -418,21 +431,20 @@ export default {
     },
     async addCategory() {
       if (!this.isFormValid) return;
-      
       try {
         const formData = new FormData();
         formData.append('name', this.newCategory.name.trim());
         formData.append('image', this.newCategory.imageFile);
-        
+        const token = localStorage.getItem('token');
+        console.log('token ที่จะส่ง:', token); // debug token
         await axios.post(this.backendUrl + '/api/categories', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${token}`
+          }
         });
-        
         this.closeModal();
         await this.fetchCategories();
-        
-        // If this is the first category or we're on the first page, stay on first page
-        // Otherwise, go to the last page to see the new category
         if (this.categories.length > this.itemsPerPage) {
           this.currentPage = this.totalPages - 1;
         }
@@ -443,17 +455,17 @@ export default {
     },
     async deleteCategory(categoryId) {
       if (!confirm('คุณต้องการลบรายการนี้หรือไม่?')) return;
-      
       try {
-        await axios.delete(this.backendUrl + `/api/categories/${categoryId}`);
+        const token = localStorage.getItem('token');
+        await axios.delete(this.backendUrl + `/api/categories/${categoryId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
         await this.fetchCategories();
-        
-        // Reset to first page if current page is empty
         if (this.displayedCategories.length === 0 && this.currentPage > 0) {
           this.currentPage = 0;
         }
-        
-        // If we're on the last page and it becomes empty, go to previous page
         if (this.currentPage >= this.totalPages && this.currentPage > 0) {
           this.currentPage = this.totalPages - 1;
         }
@@ -519,6 +531,12 @@ export default {
     }
   },
   mounted() {
+    // ตรวจสอบสิทธิ์ก่อนเข้าหน้า
+    const storedIsAdmin = localStorage.getItem('isAdmin');
+    if (storedIsAdmin !== '1') {
+      this.$router.replace('/');
+      return;
+    }
     this.fetchBanner();
     this.fetchCategories();
     this.fetchLatestProducts();
@@ -538,6 +556,9 @@ export default {
   padding: 20px;
   background: #f8f9fa;
   min-height: 100vh;
+  position: relative;
+  z-index: 1;
+  overflow-x: hidden;
 }
 
 /* Banner Section */
@@ -656,13 +677,21 @@ export default {
   align-items: center;
   gap: 20px;
   margin-bottom: 24px;
+  position: relative;
+  z-index: 1;
+  overflow-x: hidden;
 }
 
 .category-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(8, 1fr);
   gap: 20px;
   flex: 1;
+  position: relative;
+  z-index: 1;
+  grid-template-rows: 1fr;
+  grid-auto-rows: 1fr;
+  overflow: hidden;
 }
 
 .category-card {
@@ -674,10 +703,11 @@ export default {
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   border: 1px solid #f0f0f0;
   position: relative;
-  width: 150px;
+  width: 100%;
   min-height: 120px;
   text-decoration: none !important;
   color: #2c3e50 !important;
+  z-index: 1;
 }
 
 .category-card:visited, .category-card:active, .category-card:hover {
@@ -691,9 +721,9 @@ export default {
 }
 
 .category-image-container {
-  
   position: relative;
   margin-bottom: 12px;
+  z-index: 1;
 }
 
 .category-image {
@@ -711,6 +741,7 @@ export default {
   right: -8px;
   opacity: 0;
   transition: opacity 0.3s ease;
+  z-index: 10;
 }
 
 .category-card:hover .category-overlay {
@@ -731,6 +762,7 @@ export default {
   justify-content: center;
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+  z-index: 15;
 }
 
 .delete-category-btn:hover {
@@ -761,6 +793,8 @@ export default {
   justify-content: center;
   transition: all 0.3s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 5;
+  position: relative;
 }
 
 .nav-arrow:hover {
@@ -776,6 +810,8 @@ export default {
   padding: 16px;
   background: #f8f9fa;
   border-radius: 8px;
+  position: relative;
+  z-index: 1;
 }
 
 .pagination-text {
@@ -1116,7 +1152,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 9999;
   backdrop-filter: blur(4px);
 }
 
@@ -1129,6 +1165,8 @@ export default {
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   animation: modalSlideIn 0.3s ease;
+  position: relative;
+  z-index: 10000;
 }
 
 @keyframes modalSlideIn {
@@ -1303,30 +1341,52 @@ export default {
 }
 
 /* Responsive Design */
-@media (max-width: 1200px) {
+@media (max-width: 1400px) {
+  .admin-container {
+    max-width: 1200px;
+  }
+  
   .product-grid {
     grid-template-columns: repeat(4, 1fr);
   }
 }
 
-@media (max-width: 992px) {
+@media (max-width: 1200px) {
+  .admin-container {
+    max-width: 100%;
+    padding: 16px;
+  }
+  
   .product-grid {
     grid-template-columns: repeat(3, 1fr);
   }
+  
+  .category-grid {
+    grid-template-columns: repeat(8, 1fr);
+  }
+  
+  .category-container {
+    gap: 16px;
+  }
+  
+  .nav-arrow {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 992px) {
   .admin-container {
-    padding: 16px;
+    padding: 12px;
   }
   
   .section-title {
     font-size: 24px;
   }
   
-  .category-grid {
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-    gap: 16px;
+  .section-subtitle {
+    font-size: 14px;
   }
   
   .product-grid {
@@ -1334,9 +1394,88 @@ export default {
     gap: 16px;
   }
   
+  .category-grid {
+    grid-template-columns: repeat(8, 1fr);
+    gap: 12px;
+  }
+  
+  .category-container {
+    gap: 12px;
+  }
+  
+  .nav-arrow {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+  
+  .banner-image {
+    height: 300px;
+  }
+  
+  .why-features {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-container {
+    padding: 10px;
+    overflow-x: hidden;
+  }
+  
+  .section-title {
+    font-size: 22px;
+  }
+  
+  .category-container {
+    gap: 8px;
+  }
+  
+  .category-grid {
+    grid-template-columns: repeat(8, 1fr);
+    gap: 8px;
+  }
+  
+  .category-card {
+    width: 100%;
+    min-height: 100px;
+    padding: 12px;
+    position: relative;
+    z-index: 1;
+  }
+  
+  .category-image {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .category-name {
+    font-size: 12px;
+  }
+  
+  .nav-arrow {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+  
+  .delete-category-btn {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+  }
+  
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  
   .product-card {
     width: 100%;
     height: 280px;
+    position: relative;
+    z-index: 1;
   }
   
   .product-image-container {
@@ -1362,13 +1501,79 @@ export default {
   
   .modal-content {
     width: 95vw;
+    max-width: 95vw;
+    position: relative;
+    z-index: 10000;
+  }
+  
+  .banner-image {
+    height: 250px;
+  }
+  
+  .banner-upload-area {
+    padding: 40px 16px;
+  }
+  
+  .upload-text {
+    font-size: 18px;
+  }
+  
+  .upload-subtitle {
+    font-size: 12px;
   }
 }
 
 @media (max-width: 480px) {
+  .admin-container {
+    padding: 8px;
+  }
+  
+  .section-title {
+    font-size: 20px;
+  }
+  
+  .section-subtitle {
+    font-size: 13px;
+  }
+  
+  .category-container {
+    gap: 6px;
+  }
+  
+  .category-grid {
+    grid-template-columns: repeat(8, 1fr);
+    gap: 6px;
+  }
+  
+  .category-card {
+    min-height: 80px;
+    padding: 8px;
+  }
+  
+  .category-image {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .category-name {
+    font-size: 11px;
+  }
+  
+  .nav-arrow {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+  
+  .delete-category-btn {
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+  }
+  
   .product-grid {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 10px;
   }
   
   .product-card {
@@ -1391,6 +1596,77 @@ export default {
   
   .product-price {
     font-size: 14px;
+  }
+  
+  .banner-image {
+    height: 200px;
+  }
+  
+  .banner-upload-area {
+    padding: 30px 12px;
+  }
+  
+  .upload-text {
+    font-size: 16px;
+  }
+  
+  .upload-subtitle {
+    font-size: 11px;
+  }
+  
+  .modal-content {
+    width: 98vw;
+    max-width: 98vw;
+    padding: 16px;
+  }
+  
+  .modal-header {
+    padding: 16px 16px 0 16px;
+  }
+  
+  .modal-body {
+    padding: 0 16px;
+  }
+  
+  .modal-footer {
+    padding: 16px;
+  }
+}
+
+/* Tablet Landscape */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .admin-container {
+    padding: 14px;
+  }
+  
+  .product-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .category-grid {
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  }
+}
+
+/* Large Desktop */
+@media (min-width: 1600px) {
+  .admin-container {
+    max-width: 1600px;
+  }
+  
+  .product-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+/* Extra Large Desktop */
+@media (min-width: 1920px) {
+  .admin-container {
+    max-width: 1800px;
+  }
+  
+  .product-grid {
+    grid-template-columns: repeat(7, 1fr);
   }
 }
 .edit-why-btn {

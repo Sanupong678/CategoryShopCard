@@ -3,6 +3,7 @@ const router = express.Router();
 const adminProfileController = require('../controllers/adminProfileController');
 const multer = require('multer');
 const path = require('path');
+const authMiddleware = require('../middleware/authMiddleware');
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -14,7 +15,14 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+// รองรับอัปโหลดทั้ง images (array) และ qrcode (single file)
+const profileUpload = upload.fields([
+  { name: 'images', maxCount: 5 },
+  { name: 'qrcode', maxCount: 1 }
+]);
+
+// เปลี่ยน GET profile ให้ public
 router.get('/profile', adminProfileController.getProfile);
-router.put('/profile', upload.array('images', 5), adminProfileController.updateProfile);
+router.put('/profile', authMiddleware, profileUpload, adminProfileController.updateProfile);
 
 module.exports = router; 

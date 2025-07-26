@@ -211,28 +211,52 @@ export default {
     };
   },
   async mounted() {
+    // ตรวจสอบสิทธิ์ก่อนเข้าหน้า
+    const storedIsAdmin = localStorage.getItem('isAdmin');
+    if (storedIsAdmin !== '1') {
+      this.$router.replace('/');
+      return;
+    }
     await this.fetchCategories();
     await this.fetchProducts();
   },
   methods: {
     async fetchCategories() {
       try {
-        const response = await axios.get('http://localhost:5000/api/categories');
+        const token = localStorage.getItem('token');
+        const response = await axios.get('http://localhost:5000/api/categories', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         this.categories = response.data;
       } catch (error) {
-        console.error('Error fetching categories:', error);
+        if (error.response && error.response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('isAdmin');
+          this.$router.replace('/');
+        } else {
+          console.error('Error fetching categories:', error);
+        }
       }
     },
     async fetchProducts() {
       this.loading = true;
       try {
+        const token = localStorage.getItem('token');
         const url = this.selectedCategory 
           ? `http://localhost:5000/api/products/by-category?category=${this.selectedCategory}`
           : 'http://localhost:5000/api/products';
-        const response = await axios.get(url);
+        const response = await axios.get(url, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         this.products = response.data;
       } catch (error) {
-        console.error('Error fetching products:', error);
+        if (error.response && error.response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('isAdmin');
+          this.$router.replace('/');
+        } else {
+          console.error('Error fetching products:', error);
+        }
       } finally {
         this.loading = false;
       }
@@ -421,11 +445,13 @@ export default {
           }
         });
 
+        const token = localStorage.getItem('token');
         if (this.editingProduct) {
           // Update existing product
           await axios.put(`http://localhost:5000/api/products/${this.editingProduct._id}`, formData, {
             headers: {
-              'Content-Type': 'multipart/form-data'
+              'Content-Type': 'multipart/form-data',
+              Authorization: `Bearer ${token}`
             }
           });
           alert('อัปเดตสินค้าสำเร็จ!');
@@ -433,7 +459,8 @@ export default {
           // Create new product
           await axios.post('http://localhost:5000/api/products', formData, {
             headers: {
-              'Content-Type': 'multipart/form-data'
+              'Content-Type': 'multipart/form-data',
+              Authorization: `Bearer ${token}`
             }
           });
           alert('บันทึกสินค้าสำเร็จ!');
@@ -442,8 +469,14 @@ export default {
         this.closeModal();
         await this.fetchProducts();
       } catch (error) {
-        console.error('Error saving product:', error);
-        alert('เกิดข้อผิดพลาดในการบันทึกสินค้า');
+        if (error.response && error.response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('isAdmin');
+          this.$router.replace('/');
+        } else {
+          console.error('Error saving product:', error);
+          alert('เกิดข้อผิดพลาดในการบันทึกสินค้า');
+        }
       } finally {
         this.loading = false;
       }
@@ -452,12 +485,21 @@ export default {
       if (!confirm('คุณแน่ใจหรือไม่ที่จะลบสินค้านี้?')) return;
       
       try {
-        await axios.delete(`http://localhost:5000/api/products/${productId}`);
+        const token = localStorage.getItem('token');
+        await axios.delete(`http://localhost:5000/api/products/${productId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
         alert('ลบสินค้าสำเร็จ!');
         await this.fetchProducts();
       } catch (error) {
-        console.error('Error deleting product:', error);
-        alert('เกิดข้อผิดพลาดในการลบสินค้า');
+        if (error.response && error.response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('isAdmin');
+          this.$router.replace('/');
+        } else {
+          console.error('Error deleting product:', error);
+          alert('เกิดข้อผิดพลาดในการลบสินค้า');
+        }
       }
     }
   }
@@ -1080,28 +1122,77 @@ export default {
 }
 
 /* Responsive Design */
+@media (max-width: 1400px) {
+  .management-admin {
+    max-width: 1200px;
+  }
+  
+  .products-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
 @media (max-width: 1200px) {
+  .management-admin {
+    max-width: 100%;
+    padding: 16px;
+  }
+  
   .products-grid {
     grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .header-section {
+    margin-bottom: 24px;
+  }
+  
+  .page-title {
+    font-size: 24px;
   }
 }
 
 @media (max-width: 992px) {
+  .management-admin {
+    padding: 14px;
+  }
+  
   .products-grid {
     grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .page-title {
+    font-size: 22px;
+  }
+  
+  .filter-section {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .category-filter {
+    width: 100%;
   }
 }
 
 @media (max-width: 768px) {
+  .management-admin {
+    padding: 12px;
+  }
+  
   .header-section {
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
     align-items: stretch;
+    margin-bottom: 20px;
+  }
+  
+  .page-title {
+    font-size: 20px;
   }
   
   .products-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
+    gap: 12px;
   }
   
   .product-form {
@@ -1119,12 +1210,148 @@ export default {
   .form-row-flex {
     flex-direction: column;
   }
+  
+  .form-group {
+    margin-bottom: 16px;
+  }
+  
+  .form-group label {
+    font-size: 14px;
+  }
+  
+  .form-group input,
+  .form-group textarea,
+  .form-group select {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+  
+  .add-product-btn {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+  
+  .modal-content {
+    width: 95vw;
+    max-width: 95vw;
+  }
+  
+  .form-actions {
+    gap: 12px;
+    margin-top: 20px;
+  }
+  
+  .cancel-btn,
+  .submit-btn {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
 }
 
 @media (max-width: 480px) {
+  .management-admin {
+    padding: 8px;
+  }
+  
+  .header-section {
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  
+  .page-title {
+    font-size: 18px;
+  }
+  
   .products-grid {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 10px;
+  }
+  
+  .filter-section {
+    gap: 8px;
+  }
+  
+  .category-filter {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  
+  .add-product-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+  
+  .modal-content {
+    width: 98vw;
+    max-width: 98vw;
+    padding: 16px;
+  }
+  
+  .modal-header {
+    padding: 16px 16px 0 16px;
+  }
+  
+  .modal-body {
+    padding: 0 16px;
+  }
+  
+  .form-group {
+    margin-bottom: 12px;
+  }
+  
+  .form-group label {
+    font-size: 13px;
+  }
+  
+  .form-group input,
+  .form-group textarea,
+  .form-group select {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  
+  .form-actions {
+    gap: 8px;
+    margin-top: 16px;
+  }
+  
+  .cancel-btn,
+  .submit-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+}
+
+/* Tablet Landscape */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .management-admin {
+    padding: 14px;
+  }
+  
+  .products-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Large Desktop */
+@media (min-width: 1600px) {
+  .management-admin {
+    max-width: 1400px;
+  }
+  
+  .products-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+/* Extra Large Desktop */
+@media (min-width: 1920px) {
+  .management-admin {
+    max-width: 1600px;
+  }
+  
+  .products-grid {
+    grid-template-columns: repeat(7, 1fr);
   }
 }
 </style>

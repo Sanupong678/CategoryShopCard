@@ -4,6 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const categoryController = require('../controllers/categoryController');
+const authMiddleware = require('../middleware/authMiddleware');
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, '..', 'uploads');
@@ -43,9 +44,9 @@ const upload = multer({
 
 // Category routes
 router.get('/categories', categoryController.getAllCategories);
-router.post('/categories', upload.single('image'), categoryController.createCategory);
-router.put('/categories/:id', upload.single('image'), categoryController.updateCategory);
-router.delete('/categories/:id', categoryController.deleteCategory);
+router.post('/categories', authMiddleware, upload.single('image'), categoryController.createCategory);
+router.put('/categories/:id', authMiddleware, upload.single('image'), categoryController.updateCategory);
+router.delete('/categories/:id', authMiddleware, categoryController.deleteCategory);
 router.get('/categories/:id', categoryController.getCategoryById);
 
 module.exports = router;

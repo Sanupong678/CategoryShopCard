@@ -24,8 +24,12 @@ exports.updateProfile = async (req, res) => {
     }
     // handle images
     let imageUrls = profile.imageUrls || [];
-    if (req.files && req.files.length > 0) {
-      imageUrls = req.files.map(file => '/uploads/' + file.filename);
+    if (req.files && req.files.images && req.files.images.length > 0) {
+      imageUrls = req.files.images.map(file => '/uploads/' + file.filename);
+    }
+    // handle qrcode
+    if (req.files && req.files.qrcode && req.files.qrcode.length > 0) {
+      profile.qrcode = '/uploads/' + req.files.qrcode[0].filename;
     }
     // update fields
     profile.firstName = req.body.firstName;
@@ -37,6 +41,7 @@ exports.updateProfile = async (req, res) => {
     profile.detail = req.body.detail;
     profile.facebook = req.body.facebook;
     profile.lineId = req.body.lineId;
+    profile.lineQrcodeText = req.body.lineQrcodeText;
     if (imageUrls.length > 0) profile.imageUrls = imageUrls;
     await profile.save();
     res.json(profile);

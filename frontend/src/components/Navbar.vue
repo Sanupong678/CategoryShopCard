@@ -7,7 +7,7 @@
           <span class="nav-icon">🏠</span>
           หน้าหลัก
         </router-link>
-        <a href="#" class="nav-link">
+        <a href="#" class="nav-link" @click.prevent="goToProfile">
           <span class="nav-icon">📞</span>
           ช่องทางติดต่อ
         </a>
@@ -136,6 +136,9 @@ export default {
       this.showSearchModal = false;
       this.searchResults = [];
       this.loadingSearch = false;
+    },
+    goToProfile() {
+      this.$router.push('/admin/profile');
     }
   }
 }
@@ -153,7 +156,8 @@ export default {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: 100;
+  width: 100%;
 }
 
 /* Top Navigation Bar */
@@ -318,7 +322,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 3000;
+  z-index: 9999;
 }
 .search-modal-content {
   background: #fff;
@@ -380,36 +384,63 @@ export default {
 
 
 /* Responsive Design */
+@media (max-width: 1400px) {
+  .navbar-container {
+    max-width: 1200px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .navbar-container {
+    max-width: 100%;
+    padding: 0 16px;
+  }
+  
+  .search-section {
+    max-width: 500px;
+  }
+}
+
 @media (max-width: 1024px) {
   .navbar-container {
     gap: 20px;
+    padding: 0 12px;
   }
   
   .search-section {
     max-width: 400px;
   }
   
-  .nav-links {
-    gap: 4px;
+  .logo-text {
+    font-size: 18px;
   }
   
-  .nav-item {
-    padding: 10px 12px;
-    min-width: 70px;
+  .search-input {
+    padding: 12px 16px;
+    font-size: 14px;
+  }
+  
+  .search-btn {
+    padding: 12px 16px;
   }
 }
 
 @media (max-width: 768px) {
   .navbar-top-left,
   .navbar-top-right {
-    padding: 0 20px;
-    gap: 15px;
+    padding: 0 16px;
+    gap: 12px;
+  }
+  
+  .nav-link {
+    font-size: 13px;
+    padding: 6px 10px;
   }
   
   .navbar-container {
     flex-direction: column;
-    gap: 16px;
-    padding: 0 16px;
+    gap: 12px;
+    padding: 0 12px;
   }
   
   .search-section {
@@ -417,47 +448,117 @@ export default {
     width: 100%;
   }
   
-  .nav-links {
-    width: 100%;
-    justify-content: space-around;
-  }
-  
-  .nav-item {
-    flex: 1;
-    min-width: unset;
-  }
-  
   .logo {
-    padding: 10px 16px;
+    padding: 8px 14px;
   }
   
   .logo-text {
-    font-size: 18px;
-  }
-}
-
-@media (max-width: 480px) {
-  .navbar-top-left,
-  .navbar-top-right {
-    padding: 0 10px;
-    gap: 10px;
-  }
-  
-  .nav-link {
-    font-size: 12px;
-    padding: 4px 8px;
-  }
-  
-  .nav-icon {
-    font-size: 12px;
+    font-size: 16px;
   }
   
   .logo-icon {
     font-size: 20px;
   }
   
+  .search-input {
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+  
+  .search-btn {
+    padding: 10px 14px;
+  }
+  
+  .search-modal-content {
+    width: 95vw;
+    max-width: 95vw;
+    padding: 24px 16px 16px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar-top-left,
+  .navbar-top-right {
+    padding: 0 8px;
+    gap: 8px;
+  }
+  
+  .nav-link {
+    font-size: 11px;
+    padding: 4px 6px;
+  }
+  
+  .nav-icon {
+    font-size: 11px;
+  }
+  
+  .navbar-container {
+    padding: 0 8px;
+    gap: 8px;
+  }
+  
+  .logo {
+    padding: 6px 10px;
+  }
+  
   .logo-text {
-    font-size: 16px;
+    font-size: 14px;
+  }
+  
+  .logo-icon {
+    font-size: 18px;
+  }
+  
+  .search-input {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  
+  .search-btn {
+    padding: 8px 12px;
+  }
+  
+  .search-modal-content {
+    width: 98vw;
+    max-width: 98vw;
+    padding: 20px 12px 12px 12px;
+  }
+  
+  .search-modal-header {
+    font-size: 1rem;
+  }
+}
+
+/* Tablet Landscape */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .navbar-container {
+    padding: 0 14px;
+  }
+  
+  .search-section {
+    max-width: 450px;
+  }
+}
+
+/* Large Desktop */
+@media (min-width: 1600px) {
+  .navbar-container {
+    max-width: 1400px;
+  }
+  
+  .search-section {
+    max-width: 600px;
+  }
+}
+
+/* Extra Large Desktop */
+@media (min-width: 1920px) {
+  .navbar-container {
+    max-width: 1600px;
+  }
+  
+  .search-section {
+    max-width: 700px;
   }
 }
 </style>

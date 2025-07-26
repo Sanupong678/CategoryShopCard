@@ -9,6 +9,7 @@ const {
   deleteProduct,
   upload
 } = require('../controllers/productController');
+const authMiddleware = require('../middleware/authMiddleware');
 
 // GET all products
 router.get('/', getAllProducts);
@@ -20,12 +21,12 @@ router.get('/by-category', getProductsByCategory);
 router.get('/:id', getProductById);
 
 // POST create new product (with multiple image uploads)
-router.post('/', upload.array('images', 10), createProduct);
+router.post('/', authMiddleware, upload.array('images', 10), createProduct);
 
 // PUT update product (with multiple image uploads)
-router.put('/:id', upload.array('images', 10), updateProduct);
+router.put('/:id', authMiddleware, upload.array('images', 10), updateProduct);
 
 // DELETE product
-router.delete('/:id', deleteProduct);
+router.delete('/:id', authMiddleware, deleteProduct);
 
 module.exports = router; 

@@ -7,7 +7,7 @@
             <span class="nav-icon">🏠</span>
             หน้าหลัก
           </router-link>
-          <a href="#" class="nav-link">
+          <a href="#" class="nav-link" @click.prevent="goToProfile">
             <span class="nav-icon">📞</span>
             ช่องทางติดต่อ
           </a>
@@ -174,6 +174,9 @@
         } else {
           return 'เมื่อสักครู่';
         }
+      },
+      goToProfile() {
+        this.$router.push('/profile');
       }
     }
   }

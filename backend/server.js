@@ -10,10 +10,15 @@ const adminProfileRoutes = require('./routes/adminProfile');
 const whyContentRoutes = require('./routes/whyContent');
 const footerRoutes = require('./routes/footer');
 const authRoutes = require('./routes/auth');
+const cookieParser = require('cookie-parser');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  credentials: true
+}));
 app.use(express.json());
+app.use(cookieParser());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // 🔽 เชื่อม MONGO_URL ให้ตรงกับ .env
