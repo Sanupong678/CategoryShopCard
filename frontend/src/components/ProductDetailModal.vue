@@ -238,7 +238,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 9999;
   padding: 20px;
 }
 
@@ -250,6 +250,8 @@ export default {
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 10000;
 }
 
 .modal-header {
@@ -560,7 +562,7 @@ export default {
   right: 0;
   bottom: 0;
   background: rgba(0,0,0,0.85);
-  z-index: 3000;
+  z-index: 9998;
   display: flex;
   align-items: center;
   justify-content: center;

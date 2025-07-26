@@ -29,7 +29,7 @@
           class="category-card"
         >
           <div class="category-image-container">
-            <img :src="backendUrl + category.imageUrl" :alt="category.name" class="category-image" />
+            <img :src="getCategoryImageUrl(category)" :alt="category.name" class="category-image" />
           </div>
           <div class="category-name">{{ category.name }}</div>
         </router-link>
@@ -157,8 +157,9 @@ export default {
     },
     async fetchCategories() {
       try {
-        const res = await axios.get(this.backendUrl + '/api/categories');
-        this.categories = res.data;
+        const response = await axios.get(`${this.backendUrl}/api/categories`);
+        this.categories = response.data;
+        console.log('Categories data:', this.categories);
       } catch (error) {
         console.error('Error fetching categories:', error);
       }
@@ -210,6 +211,17 @@ export default {
       if (product.phone) {
         window.open(`tel:${product.phone}`, '_blank');
       }
+    },
+    getCategoryImageUrl(category) {
+      // ตรวจสอบว่าเป็น Base64 หรือ URL
+      if (category.image && category.image.startsWith('data:image/')) {
+        return category.image; // Base64 image
+      }
+      if (category.imageUrl) {
+        return this.backendUrl + category.imageUrl; // URL image
+      }
+      // ใช้ data URL แทนไฟล์
+      return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlPC90ZXh0Pjwvc3ZnPg==';
     }
   },
   mounted() {
