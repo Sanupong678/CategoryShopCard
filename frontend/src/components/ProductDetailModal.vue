@@ -146,12 +146,21 @@ export default {
       this.$emit('close');
     },
     getModalImageUrl(imagePath) {
-      if (!imagePath || !imagePath.trim()) return '/placeholder-product.jpg';
-      return this.backendUrl + imagePath;
+      if (!imagePath || !imagePath.trim()) {
+        // ใช้ data URL แทนไฟล์
+        return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlPC90ZXh0Pjwvc3ZnPg==';
+      }
+      
+      // ตรวจสอบว่าเป็น Base64 หรือ URL
+      if (imagePath.startsWith('data:image/')) {
+        return imagePath; // Base64 image
+      }
+      return this.backendUrl + imagePath; // URL image
     },
     handleModalImageError(event) {
       console.warn('Modal image failed to load:', event.target.src);
-      event.target.src = '/placeholder-product.jpg';
+      // ใช้ data URL แทนไฟล์
+      event.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjBmMGYwIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlPC90ZXh0Pjwvc3ZnPg==';
       event.target.onerror = null; // Prevent infinite loop
     },
     formatPrice(price) {
