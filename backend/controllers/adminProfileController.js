@@ -2,6 +2,8 @@ const AdminProfile = require('../models/AdminProfile');
 const path = require('path');
 const fs = require('fs');
 
+
+
 exports.getProfile = async (req, res) => {
   try {
     let profile = await AdminProfile.findOne();

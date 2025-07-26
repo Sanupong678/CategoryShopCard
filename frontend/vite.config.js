@@ -8,9 +8,5 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:5000' // ตรวจสอบให้ backend รันที่พอร์ต 5000 จริงๆ
     }
-  },
-  build: {
-    outDir: 'dist',
-    assetsDir: 'assets'
   }
 })

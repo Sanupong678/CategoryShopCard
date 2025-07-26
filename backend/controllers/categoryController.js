@@ -1,4 +1,5 @@
 const Category = require('../models/Category');
+const Product = require('../models/Product');
 const fs = require('fs');
 const path = require('path');
 
@@ -67,19 +68,49 @@ const deleteCategory = async (req, res) => {
       return res.status(404).json({ message: 'ไม่พบรายการที่ต้องการลบ' });
     }
 
-    // Delete image file if exists
+    // ลบ product ทั้งหมดที่อยู่ใน category นี้
+    const productsToDelete = await Product.find({ category: id });
+    console.log(`[${new Date().toISOString()}] Found ${productsToDelete.length} products to delete`);
+
+    // ลบไฟล์รูปของ product ทั้งหมด
+    for (const product of productsToDelete) {
+      if (product.images && Array.isArray(product.images)) {
+        for (const imageUrl of product.images) {
+          try {
+            const filename = imageUrl.split('/').pop();
+            const imagePath = path.join(__dirname, '..', 'uploads', 'products', filename);
+            if (fs.existsSync(imagePath)) {
+              fs.unlinkSync(imagePath);
+              console.log(`[${new Date().toISOString()}] Deleted product image file: ${imagePath}`);
+            }
+          } catch (fileError) {
+            console.error(`[${new Date().toISOString()}] Error deleting product image file:`, fileError);
+          }
+        }
+      }
+    }
+
+    // ลบ product ทั้งหมด
+    const deleteResult = await Product.deleteMany({ category: id });
+    console.log(`[${new Date().toISOString()}] Deleted ${deleteResult.deletedCount} products`);
+
+    // Delete category image file if exists
     if (category.imageUrl) {
       const imagePath = path.join(__dirname, '..', category.imageUrl);
       if (fs.existsSync(imagePath)) {
         fs.unlinkSync(imagePath);
-        console.log(`[${new Date().toISOString()}] Deleted image file: ${imagePath}`);
+        console.log(`[${new Date().toISOString()}] Deleted category image file: ${imagePath}`);
       }
     }
 
+    // ลบ category
     await Category.findByIdAndDelete(id);
     
-    console.log(`[${new Date().toISOString()}] Successfully deleted category with id: ${id}`);
-    res.json({ message: 'ลบรายการสำเร็จ' });
+    console.log(`[${new Date().toISOString()}] Successfully deleted category with id: ${id} and ${deleteResult.deletedCount} related products`);
+    res.json({ 
+      message: `ลบรายการสำเร็จ พร้อมลบสินค้าที่เกี่ยวข้อง ${deleteResult.deletedCount} รายการ`,
+      deletedProducts: deleteResult.deletedCount
+    });
   } catch (error) {
     console.error(`[${new Date().toISOString()}] Error deleting category:`, error);
     res.status(500).json({ message: 'เกิดข้อผิดพลาดในการลบรายการ' });

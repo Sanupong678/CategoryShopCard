@@ -4,8 +4,7 @@
   "main": "server.js",
   "type": "commonjs",
   "scripts": {
-    "start": "node server.js",
-    "build": "echo 'Build completed'"
+    "start": "node server.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

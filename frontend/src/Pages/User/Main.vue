@@ -184,6 +184,8 @@ export default {
       try {
         const res = await axios.get(this.backendUrl + '/api/whycontent');
         this.whyContent = res.data;
+        if (res.data.title) this.whyTitle = res.data.title;
+        if (res.data.subtitle) this.whySubtitle = res.data.subtitle;
       } catch (e) {
         this.whyContent = { color: '#f8f9fd', description: '', features: [] };
       }
