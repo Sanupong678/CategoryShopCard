@@ -7,6 +7,7 @@ const {
   createProduct,
   updateProduct,
   deleteProduct,
+  updateProductStatus,
   upload
 } = require('../controllers/productController');
 const authMiddleware = require('../middleware/authMiddleware');
@@ -28,5 +29,8 @@ router.put('/:id', authMiddleware, upload.array('images', 10), updateProduct);
 
 // DELETE product
 router.delete('/:id', authMiddleware, deleteProduct);
+
+// PATCH update product status
+router.patch('/:id/status', authMiddleware, updateProductStatus);
 
 module.exports = router; 

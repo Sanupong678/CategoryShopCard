@@ -561,7 +561,7 @@ export default {
   right: 0;
   bottom: 0;
   background: rgba(0,0,0,0.85);
-  z-index: 9998;
+  z-index: 10001;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -574,6 +574,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 10002;
 }
 .image-popup-img {
   max-width: 80vw;
@@ -598,7 +599,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10; /* Ensure arrows are above image */
+  z-index: 10003; /* Ensure arrows are above image */
 }
 .image-popup-arrow:hover {
   background: rgba(0, 0, 0, 0.8);
@@ -627,6 +628,7 @@ export default {
   align-items: center;
   justify-content: center;
   transition: background 0.2s;
+  z-index: 10004;
 }
 .image-popup-close:hover {
   background: #f0f0f0;

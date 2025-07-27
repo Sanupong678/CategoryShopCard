@@ -15,6 +15,12 @@ const productSchema = new mongoose.Schema({
     type: String, 
     enum: ['url', 'base64'], 
     default: 'url' 
+  },
+  // เพิ่มฟิลด์ status สำหรับสินค้า
+  status: {
+    type: String,
+    enum: ['ปกติ', 'ขาย'],
+    default: 'ปกติ'
   }
 }, { timestamps: true });
 

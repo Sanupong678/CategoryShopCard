@@ -27,21 +27,34 @@
         ไม่มีสินค้าในหมวดหมู่นี้
       </div>
       <div v-else class="products-grid">
-        <ProductCard
-          v-for="product in products"
-          :key="product._id"
-          :product="product"
-          :categories="categories"
-          :backend-url="backendUrl"
-          :show-new-badge="false"
-          :show-description="false"
-          :show-time="false"
-          :show-actions="false"
-          :show-admin-actions="true"
-          @card-click="editProduct"
-          @edit="editProduct"
-          @delete="deleteProduct"
-        />
+        <div v-for="product in products" :key="product._id" class="product-admin-card">
+          <ProductCard
+            :product="product"
+            :categories="categories"
+            :backend-url="backendUrl"
+            :show-new-badge="false"
+            :show-description="false"
+            :show-time="false"
+            :show-actions="false"
+            :show-admin-actions="true"
+            @card-click="editProduct"
+            @edit="editProduct"
+            @delete="deleteProduct"
+          />
+          <!-- Status Control -->
+          <div class="status-control">
+            <label class="status-label">สถานะ:</label>
+            <select 
+              :value="product.status || 'ปกติ'" 
+              @change="updateProductStatus(product._id, $event.target.value)"
+              class="status-select"
+              :class="{ 'status-sold': product.status === 'ขาย' }"
+            >
+              <option value="ปกติ">ปกติ</option>
+              <option value="ขาย">ขาย</option>
+            </select>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -501,6 +514,33 @@ export default {
           alert('เกิดข้อผิดพลาดในการลบสินค้า');
         }
       }
+    },
+    async updateProductStatus(productId, status) {
+      try {
+        const token = localStorage.getItem('token');
+        await axios.patch(`http://localhost:5000/api/products/${productId}/status`, 
+          { status },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        
+        // อัปเดตสถานะใน local state
+        const productIndex = this.products.findIndex(p => p._id === productId);
+        if (productIndex !== -1) {
+          this.products[productIndex].status = status;
+        }
+        
+        const statusText = status === 'ขาย' ? 'ขายแล้ว' : 'ปกติ';
+        alert(`อัปเดตสถานะสินค้าเป็น "${statusText}" สำเร็จ!`);
+      } catch (error) {
+        if (error.response && error.response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('isAdmin');
+          this.$router.replace('/');
+        } else {
+          console.error('Error updating product status:', error);
+          alert('เกิดข้อผิดพลาดในการอัปเดตสถานะสินค้า');
+        }
+      }
     }
   }
 };
@@ -598,6 +638,53 @@ export default {
   grid-template-columns: repeat(5, 1fr);
   gap: 20px;
   max-width: 100%;
+}
+
+.product-admin-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.status-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.status-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #495057;
+  white-space: nowrap;
+}
+
+.status-select {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 12px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.status-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+.status-select.status-sold {
+  background: #fff5f5;
+  border-color: #e74c3c;
+  color: #e74c3c;
+  font-weight: 600;
 }
 
 .product-card {
@@ -1195,6 +1282,20 @@ export default {
     gap: 12px;
   }
   
+  .status-control {
+    padding: 6px 8px;
+    gap: 6px;
+  }
+  
+  .status-label {
+    font-size: 11px;
+  }
+  
+  .status-select {
+    padding: 4px 6px;
+    font-size: 11px;
+  }
+  
   .product-form {
     flex-direction: column;
   }
@@ -1265,6 +1366,20 @@ export default {
   .products-grid {
     grid-template-columns: 1fr;
     gap: 10px;
+  }
+  
+  .status-control {
+    padding: 4px 6px;
+    gap: 4px;
+  }
+  
+  .status-label {
+    font-size: 10px;
+  }
+  
+  .status-select {
+    padding: 3px 4px;
+    font-size: 10px;
   }
   
   .filter-section {

@@ -233,6 +233,32 @@ const deleteProduct = async (req, res) => {
   }
 };
 
+// PATCH update product status
+const updateProductStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    
+    if (!status || !['ปกติ', 'ขาย'].includes(status)) {
+      return res.status(400).json({ message: 'Status ต้องเป็น "ปกติ" หรือ "ขาย"' });
+    }
+    
+    const product = await Product.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    ).populate('category', 'name');
+    
+    if (!product) {
+      return res.status(404).json({ message: 'ไม่พบสินค้านี้' });
+    }
+    
+    res.json(product);
+  } catch (error) {
+    console.error('Error updating product status:', error);
+    res.status(500).json({ message: 'เกิดข้อผิดพลาดในการอัปเดตสถานะสินค้า' });
+  }
+};
+
 module.exports = { 
   getAllProducts,
   getProductsByCategory, 
@@ -240,5 +266,6 @@ module.exports = {
   createProduct,
   updateProduct,
   deleteProduct,
+  updateProductStatus,
   upload
 }; 

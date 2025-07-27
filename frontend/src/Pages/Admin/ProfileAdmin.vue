@@ -131,10 +131,26 @@ export default {
         const res = await axios.get(this.backendUrl + '/api/admin/profile', {
           headers: { Authorization: `Bearer ${token}` }
         });
-        // รองรับหลายรูป (mockup: ถ้ามี imageUrl เป็น string ให้แปลงเป็น array)
+        
+        // รองรับหลายรูปและ Base64
         let images = [];
-        if (res.data.imageUrls) images = res.data.imageUrls.map(url => this.backendUrl + url);
-        else if (res.data.imageUrl) images = [this.backendUrl + res.data.imageUrl];
+        if (res.data.imageUrls && Array.isArray(res.data.imageUrls)) {
+          images = res.data.imageUrls.map(url => {
+            if (url.startsWith('data:image/')) {
+              return url; // Base64 image
+            }
+            return this.backendUrl + url; // URL image
+          });
+        } else if (res.data.imageUrl) {
+          if (res.data.imageUrl.startsWith('data:image/')) {
+            images = [res.data.imageUrl]; // Base64 image
+          } else {
+            images = [this.backendUrl + res.data.imageUrl]; // URL image
+          }
+        } else if (res.data.imagesBase64 && Array.isArray(res.data.imagesBase64)) {
+          images = res.data.imagesBase64; // Base64 images
+        }
+        
         this.profile = { ...this.profile, ...res.data, images };
         this.currentImageIndex = 0;
       } catch (err) {

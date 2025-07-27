@@ -16,6 +16,10 @@
       <div class="product-overlay">
         <button class="view-details-btn">ดูรายละเอียด</button>
       </div>
+      <!-- Sold Status Overlay -->
+      <div v-if="product.status === 'ขาย'" class="sold-overlay">
+        <div class="sold-badge">ขายแล้ว</div>
+      </div>
     </div>
 
     <!-- Product Info -->
@@ -285,6 +289,33 @@ export default {
   transform: scale(1.05);
 }
 
+/* Sold Status Overlay */
+.sold-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;
+}
+
+.sold-badge {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+  transform: rotate(-5deg);
+}
+
 .product-info {
   padding: 16px;
   height: 180px;
@@ -515,6 +546,12 @@ export default {
   .btn-icon {
     font-size: 12px;
   }
+  
+  .sold-badge {
+    padding: 7px 14px;
+    font-size: 13px;
+    letter-spacing: 0.8px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -567,6 +604,12 @@ export default {
   .edit-btn, .delete-btn {
     padding: 6px 8px;
     font-size: 10px;
+  }
+  
+  .sold-badge {
+    padding: 6px 12px;
+    font-size: 12px;
+    letter-spacing: 0.5px;
   }
 }
 
